@@ -117,5 +117,5 @@ ax.legend()
 
 # アニメーションを表示または保存
 # plt.show()
-ani.save(f'{method_name}_{path_name}.mp4', writer='ffmpeg', fps=10)
+ani.save(f'../videos/{method_name}_{path_name}.mp4', writer='ffmpeg', fps=10)
 
