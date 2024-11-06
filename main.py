@@ -1,8 +1,11 @@
 from dwp import dwp
-from path import sin_curve
+from path import *
 from robot import forward_simulation_differential
 from time import perf_counter
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.patches import FancyArrowPatch
 
 # 初期設定
 ## ロボットの状態
@@ -10,8 +13,10 @@ current_pose = np.array([0.0, 0.0, np.pi / 2])
 current_velocity = np.array([0.0, 0.0])
 
 ## 経路
-path_name = 'sin_curve'
+# path_name = 'sin_curve'
 path = sin_curve()
+path_name = 'step_curve'
+path = step_curve()
 
 # データの保存
 robot_poses = [current_pose]
@@ -39,10 +44,6 @@ sim_end_time = perf_counter()
 print(f"Simulation time: {sim_end_time - sim_start_time}s")
 
 # アニメーションの描画
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.patches import FancyArrowPatch
-
 # データの変換
 robot_poses = np.array(robot_poses)
 look_ahead_positions = np.array(look_ahead_positions)
