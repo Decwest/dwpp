@@ -1,0 +1,8 @@
+STATIC_LOOK_AHEAD_DISTANCE = 0.5
+V_MAX = 0.5
+V_MIN = 0.0
+W_MAX = 1.0
+W_MIN = -1.0
+A_MAX = 0.5
+AW_MAX = 1.0
+DT = 0.1

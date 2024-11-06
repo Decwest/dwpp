@@ -1,2 +1,6 @@
-# dwp
-DWP: Dynamic Window Pure Pursuit
+# DWP: Dynamic Window Pure Pursuit
+
+
+## Citation
+```
+```
