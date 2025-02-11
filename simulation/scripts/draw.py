@@ -36,37 +36,92 @@ def draw_paths(path: np.ndarray, robot_poses_dist: defaultdict, path_name: str):
     plt.savefig(f'../results/{path_name}/paths.png')
 
 # 速度プロファイルの描画
-def draw_velocity_profile(time_stamps: np.ndarray, robot_velocities: np.ndarray, robot_ref_velocities: np.ndarray, method_name: str, path_name: str):
+def draw_velocity_profile(
+    time_stamps: np.ndarray,
+    robot_velocities: np.ndarray,
+    robot_ref_velocities: np.ndarray,
+    break_constraints_flags: np.ndarray,
+    method_name: str,
+    path_name: str
+):
     print("drawing velocity profiles...")
     
-    # translation
+    #==================================================================#
+    # 1. Translational velocity (並進速度) の描画
+    #==================================================================#
     fig1, ax1 = plt.subplots()
     ax1.set_xlabel('t')
     ax1.set_ylabel('v')
     ax1.set_title(f'Translational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
     
+    # コマンド速度(並進)をラインプロット
     ax1.plot(time_stamps, robot_velocities[:, 0], label='Command Velocity')
-    ax1.scatter(time_stamps, robot_ref_velocities[:, 0], label='Reference Velocity', s=5)
+
+    # 並進速度制約を破っているかどうかのフラグ (N×2のうち1列目)
+    mask_break_trans = break_constraints_flags[:, 0]  # Trueの箇所は並進速度制約違反
+    mask_ok_trans = ~mask_break_trans                # Falseの箇所はOK
+
+    # Reference velocity(並進)を、OKとNGで色分けして散布図
+    ax1.scatter(
+        time_stamps[mask_ok_trans],
+        robot_ref_velocities[mask_ok_trans, 0],
+        color='blue',
+        label='Reference Velocity (OK)',
+        s=5
+    )
+    ax1.scatter(
+        time_stamps[mask_break_trans],
+        robot_ref_velocities[mask_break_trans, 0],
+        color='red',
+        label='Reference Velocity (Broken Constraints)',
+        s=5
+    )
     
     ax1.legend()
     plt.tight_layout()
+    
+    # 保存用ディレクトリを作成
     os.makedirs(f'../results/{path_name}', exist_ok=True)
     plt.savefig(f'../results/{path_name}/{method_name}_translational_velocity_profile.png')
     
-    # rotation
+    
+    #==================================================================#
+    # 2. Rotational velocity (回転速度) の描画
+    #==================================================================#
     fig2, ax2 = plt.subplots()
     ax2.set_xlabel('t')
     ax2.set_ylabel('w')
     ax2.set_title(f'Rotational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
     
+    # コマンド速度(回転)をラインプロット
     ax2.plot(time_stamps, robot_velocities[:, 1], label='Command Velocity')
-    ax2.scatter(time_stamps, robot_ref_velocities[:, 1], label='Reference Velocity', s=5)
+
+    # 回転速度制約を破っているかどうかのフラグ (N×2のうち2列目)
+    mask_break_rot = break_constraints_flags[:, 1]  # Trueの箇所は回転速度制約違反
+    mask_ok_rot = ~mask_break_rot                  # Falseの箇所はOK
+
+    # Reference velocity(回転)を、OKとNGで色分けして散布図
+    ax2.scatter(
+        time_stamps[mask_ok_rot],
+        robot_ref_velocities[mask_ok_rot, 1],
+        color='blue',
+        label='Reference Velocity (OK)',
+        s=5
+    )
+    ax2.scatter(
+        time_stamps[mask_break_rot],
+        robot_ref_velocities[mask_break_rot, 1],
+        color='red',
+        label='Reference Velocity (Broken Constraints)',
+        s=5
+    )
     
     ax2.legend()
     plt.tight_layout()
     plt.savefig(f'../results/{path_name}/{method_name}_rotational_velocity_profile.png')
     
-
+    print("Done.")
+    
 # アニメーションの描画
 def draw_animation(path: np.ndarray, robot_poses: np.ndarray, look_ahead_positions: np.ndarray, method_name:str, path_name: str):
     print("drawing animations...")

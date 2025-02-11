@@ -2,7 +2,7 @@ import numpy as np
 import math
 from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS
 
-def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool]]:
     # calc index of current position
     current_idx = calc_index(current_pose, path)
     
@@ -40,13 +40,19 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
         # 加速度制約によるクリッピング
         next_velocity = calc_accel_constrained_velocity(current_velocity, next_velocity_ref)
         
-    if method_name == "dwpp":
+    else:
         # calc dynamic window and optimal next velocity
         next_velocity = calc_optimal_velocity_considering_dynamic_window(current_velocity, regulated_v, curvature, is_accel)
         next_velocity_ref = next_velocity
 
+    break_constraints_flag = [False, False]
+    if next_velocity[0] != next_velocity_ref[0]:
+        break_constraints_flag[0] = True
+    if next_velocity[1] != next_velocity_ref[1]:
+        break_constraints_flag[1] = True
+    
     # debug用に、next_velocity_refと前方注視点の位置も返す
-    return next_velocity, next_velocity_ref, look_ahead_pos
+    return next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag
 
 def calc_index(current_pose: np.ndarray, path: np.ndarray) -> np.intp:
     # current_pose: [x, y, theta]
