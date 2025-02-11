@@ -1,28 +1,52 @@
 import numpy as np
 import math
-from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, A_MAX, AW_MAX, DT
+from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS
 
-def dwp(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     # calc index of current position
     current_idx = calc_index(current_pose, path)
     
     # calc distances between initial position and each position
     path_distances = calc_path_distances(path)
     
-    # calc look ahead distance
-    look_ahead_distance = calc_look_ahead_distance(current_velocity)
+    # calc look ahead distance (Adaptive Pure Pursuit)
+    look_ahead_distance = calc_look_ahead_distance(current_velocity, method_name)
     
     # calc curvature to the look ahead position
     curvature, look_ahead_pos = calc_curvature_to_look_ahead_position(current_pose, current_idx, path, path_distances, look_ahead_distance)
-
+    
     # decide accel or decel
     is_accel = decide_accel_or_decel(current_idx, path_distances)
     
-    # calc dynamic window and optimal next velocity
-    next_velocity = calc_optimal_velocity_considering_dynamic_window(current_velocity, curvature, is_accel)
+    if method_name in ["rpp", "dwpp"]:
+        # calc regulated translational velocity (Regulated Pure Pursuit)
+        regulated_v = calc_regulated_translational_velocity(curvature)
+    
+    if method_name in ["pp", "app", "rpp"]:
+        # calc translational velocity
+        if is_accel:
+            v_ref = min(current_velocity[0] + A_MAX * DT, V_MAX)
+        else:
+            v_ref = max(current_velocity[0] - A_MAX * DT, V_MIN)
+        
+        # regulate translational velocity
+        if method_name == "rpp":
+            v_ref = min(v_ref, regulated_v)
+        
+        # calc angular velocity
+        w_ref = curvature * v_ref
+        next_velocity_ref = np.array([v_ref, w_ref])
+        
+        # 加速度制約によるクリッピング
+        next_velocity = calc_accel_constrained_velocity(current_velocity, next_velocity_ref)
+        
+    if method_name == "dwpp":
+        # calc dynamic window and optimal next velocity
+        next_velocity = calc_optimal_velocity_considering_dynamic_window(current_velocity, regulated_v, curvature, is_accel)
+        next_velocity_ref = next_velocity
 
-    # debug用に、前方注視点の位置も返す
-    return next_velocity, look_ahead_pos
+    # debug用に、next_velocity_refと前方注視点の位置も返す
+    return next_velocity, next_velocity_ref, look_ahead_pos
 
 def calc_index(current_pose: np.ndarray, path: np.ndarray) -> np.intp:
     # current_pose: [x, y, theta]
@@ -43,9 +67,13 @@ def calc_path_distances(path: np.ndarray) -> np.ndarray:
     
     return path_distances
 
-def calc_look_ahead_distance(current_velocity: np.ndarray) -> float:
+def calc_look_ahead_distance(current_velocity: np.ndarray, method_name: str) -> float:
     # calc look ahead distance
-    look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE + max((current_velocity[0] - 0.5), 0.0)
+    if method_name in ["app", "rpp", "dwpp"]:
+        look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE + max((current_velocity[0] - 0.5), 0.0)
+    else:
+        look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE
+        
     return look_ahead_distance
 
 def calc_curvature_to_look_ahead_position(current_pose: np.ndarray, current_idx: np.intp, path: np.ndarray, path_distances: np.ndarray, look_ahead_distance: float ) -> tuple[float, np.ndarray]:
@@ -69,6 +97,21 @@ def calc_curvature_to_look_ahead_position(current_pose: np.ndarray, current_idx:
     
     return curvature, look_ahead_pos
 
+def calc_regulated_translational_velocity(curvature: float) -> float:
+    # Curvature heuristics
+    if curvature == 0.0:
+        return V_MAX
+    
+    curvature_radius = 1.0 / abs(curvature)
+    if curvature_radius <= REGULATED_LINEAR_SCALING_MIN_RADIUS:
+        regulated_v = V_MAX * curvature_radius / REGULATED_LINEAR_SCALING_MIN_RADIUS
+    else:
+        regulated_v = V_MAX
+    
+    # Proximity heuristics is ommitted, this simulation does not include obstacles
+    
+    return regulated_v
+
 def decide_accel_or_decel(current_idx: np.intp, path_distances: np.ndarray) -> bool:
     # 経路のゴールまでの距離を計算
     goal_distance = path_distances[-1] - path_distances[current_idx]
@@ -82,12 +125,18 @@ def decide_accel_or_decel(current_idx: np.intp, path_distances: np.ndarray) -> b
     else:
         return False
 
-def calc_optimal_velocity_considering_dynamic_window(current_velocity: np.ndarray, curvature: float, is_accel: bool) -> np.ndarray:
+def calc_optimal_velocity_considering_dynamic_window(current_velocity: np.ndarray, regulated_v: float, curvature: float, is_accel: bool) -> np.ndarray:
     # dynamic windowを作る
     dw_vmax = min(current_velocity[0] + A_MAX * DT, V_MAX)
     dw_vmin = max(current_velocity[0] - A_MAX * DT, V_MIN)
     dw_wmax = min(current_velocity[1] + AW_MAX * DT, W_MAX)
-    dw_wmin = max(current_velocity[1] - AW_MAX * DT, W_MIN)
+    dw_wmin = max(current_velocity[1] - AW_MAX * DT, W_MIN) 
+    
+    # regulated_vの考慮
+    if dw_vmax > regulated_v:
+        dw_vmax = max(dw_vmin, regulated_v)
+        # print("Regulated v is considered.")
+        # print(f"dw_vmax: {dw_vmax}")
     
     # Dynamic windowと曲率直線の交点を計算
     ## DWの4辺との交点を算出（解析解を代入）
@@ -152,3 +201,19 @@ def calc_optimal_velocity_considering_dynamic_window(current_velocity: np.ndarra
             next_velocity = min_dist_dw_coords[0]
     
     return np.array(next_velocity)
+
+def calc_accel_constrained_velocity(current_velocity: np.ndarray, next_velocity_ref: np.ndarray) -> np.ndarray:
+    # 加速度制約によるクリッピング
+    next_velocity = next_velocity_ref.copy()
+    ## 並進加速度の制約
+    if next_velocity_ref[0] > current_velocity[0] + A_MAX * DT:
+        next_velocity[0] = current_velocity[0] + A_MAX * DT
+    elif next_velocity_ref[0] < current_velocity[0] - A_MAX * DT:
+        next_velocity[0] = current_velocity[0] - A_MAX * DT
+    ## 角速度の制約
+    if next_velocity_ref[1] > current_velocity[1] + AW_MAX * DT:
+        next_velocity[1] = current_velocity[1] + AW_MAX * DT
+    elif next_velocity_ref[1] < current_velocity[1] - AW_MAX * DT:
+        next_velocity[1] = current_velocity[1] - AW_MAX * DT
+    
+    return next_velocity
