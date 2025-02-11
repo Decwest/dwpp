@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import FancyArrowPatch
-from config import method_name_dict
+from config import method_name_dict, DT
 from collections import defaultdict
 import os
 
@@ -194,4 +194,4 @@ def draw_animation(path: np.ndarray, robot_poses: np.ndarray, look_ahead_positio
 
     # アニメーションを表示または保存
     # plt.show()
-    ani.save(f'../results/{path_name}/{method_name}.mp4', writer='ffmpeg', fps=10)
+    ani.save(f'../results/{path_name}/{method_name}.mp4', writer='ffmpeg', fps=int(1/DT))

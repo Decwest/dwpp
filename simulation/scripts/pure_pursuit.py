@@ -1,8 +1,10 @@
 import numpy as np
 import math
-from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS
+from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, \
+    A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS, REGULATED_LINEAR_SCALING_MIN_SPEED
 
-def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool]]:
+def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str)\
+    -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool]]:
     # calc index of current position
     current_idx = calc_index(current_pose, path)
     
@@ -113,6 +115,8 @@ def calc_regulated_translational_velocity(curvature: float) -> float:
         regulated_v = V_MAX * curvature_radius / REGULATED_LINEAR_SCALING_MIN_RADIUS
     else:
         regulated_v = V_MAX
+    
+    regulated_v = max(regulated_v, REGULATED_LINEAR_SCALING_MIN_SPEED)
     
     # Proximity heuristics is ommitted, this simulation does not include obstacles
     
