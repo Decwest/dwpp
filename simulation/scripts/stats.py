@@ -40,7 +40,7 @@ def calc_rmse(robot_poses_dict: defaultdict, path: np.ndarray) -> dict:
         rmse_dict[method_name] = rmse
 
         # 結果を表示 (method_name_dictがある場合)
-        print(f"Method: {method_name_dict[method_name]}, RMSE: {rmse:.6f}")
+        # print(f"Method: {method_name_dict[method_name]}, RMSE: {rmse:.6f}")
 
     return rmse_dict
 
@@ -52,7 +52,7 @@ def calc_break_constraints_rate(break_constraints_flags_dict: dict) -> dict:
         break_constraints_flags = np.array(break_constraints_flags_dict[method_name])
         break_constraints_rate = np.mean(break_constraints_flags, axis=0) * 100.0
         break_constraints_rate_dict[method_name] = break_constraints_rate
-        print(f"Method: {method_name_dict[method_name]}, constraints break ratio v: {break_constraints_rate[0]} %")
-        print(f"Method: {method_name_dict[method_name]}, constraints break ratio w: {break_constraints_rate[1]} %")
+        # print(f"Method: {method_name_dict[method_name]}, constraints break ratio v: {break_constraints_rate[0]} %")
+        # print(f"Method: {method_name_dict[method_name]}, constraints break ratio w: {break_constraints_rate[1]} %")
     
     return break_constraints_rate_dict

@@ -1,0 +1,32 @@
+Method: pp
+RMSE mean: 1.8639524124922622
+RMSE std: 3.375096845766487
+
+Method: app
+RMSE mean: 0.5877328756171852
+RMSE std: 0.9509886738893999
+
+Method: rpp
+RMSE mean: 0.08579436908117218
+RMSE std: 0.060598106882920826
+
+Method: dwpp
+RMSE mean: 0.06723852839910421
+RMSE std: 0.032158372765183574
+
+Method: pp
+Break constraints rate mean: 30.00769549672518
+Break constraints rate std: 32.615054004310686
+
+Method: app
+Break constraints rate mean: 23.241302465253863
+Break constraints rate std: 29.546420990491132
+
+Method: rpp
+Break constraints rate mean: 15.831233355195488
+Break constraints rate std: 11.462832683357895
+
+Method: dwpp
+Break constraints rate mean: 0.0
+Break constraints rate std: 0.0
+

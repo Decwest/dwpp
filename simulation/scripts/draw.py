@@ -34,6 +34,7 @@ def draw_paths(path: np.ndarray, robot_poses_dist: defaultdict, path_name: str):
 
     # グラフを表示
     plt.savefig(f'../results/{path_name}/paths.png')
+    plt.close()
 
 # 速度プロファイルの描画
 def draw_velocity_profile(
@@ -83,6 +84,7 @@ def draw_velocity_profile(
     # 保存用ディレクトリを作成
     os.makedirs(f'../results/{path_name}', exist_ok=True)
     plt.savefig(f'../results/{path_name}/{method_name}_translational_velocity_profile.png')
+    plt.close()
     
     
     #==================================================================#
@@ -119,6 +121,7 @@ def draw_velocity_profile(
     ax2.legend()
     plt.tight_layout()
     plt.savefig(f'../results/{path_name}/{method_name}_rotational_velocity_profile.png')
+    plt.close()
     
     print("Done.")
     
@@ -195,3 +198,4 @@ def draw_animation(path: np.ndarray, robot_poses: np.ndarray, look_ahead_positio
     # アニメーションを表示または保存
     # plt.show()
     ani.save(f'../results/{path_name}/{method_name}.mp4', writer='ffmpeg', fps=int(1/DT))
+    plt.close()
