@@ -23,7 +23,7 @@ def step_curves() -> list:
     paths = []
     
     theta_list = [np.pi/4, np.pi/2, 3*np.pi/4]
-    l_list = [1.0, 2.0, 3.0]
+    l_list = [2.0, 3.0, 4.0]
     
     for theta in theta_list:
         for l in l_list:

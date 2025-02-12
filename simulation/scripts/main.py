@@ -110,7 +110,7 @@ def simulate_path(idx, path, initial_pose, prefix, draw=True):
     return rmse_dict, break_constraints_rate_dict
 
 # 事前に sin_curves / step_curves を用意
-paths_sin = sin_curves()
+# paths_sin = sin_curves()
 paths_step = step_curves()
 
 # 結果をまとめるための辞書 (質問文中の total_***_dict を想定)
@@ -121,10 +121,10 @@ total_break_constraints_rate_dict = defaultdict(list)
 # プロセスプールで並列実行
 with concurrent.futures.ProcessPoolExecutor() as executor:
     # sin_curves 用のタスクをすべて投入
-    future_sin = [
-        executor.submit(simulate_path, idx, path, np.array([0.0, 0.0, np.pi/2]), 'sin_curve')
-        for idx, path in enumerate(paths_sin)
-    ]
+    # future_sin = [
+    #     executor.submit(simulate_path, idx, path, np.array([0.0, 0.0, np.pi/2]), 'sin_curve')
+    #     for idx, path in enumerate(paths_sin)
+    # ]
     # step_curves 用のタスクをすべて投入
     future_step = [
         executor.submit(simulate_path, idx, path, np.array([0.0, 0.0, 0.0]), 'step_curve')
@@ -132,13 +132,13 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
     ]
     
     # sin_curves の結果を回収
-    for future in concurrent.futures.as_completed(future_sin):
-        rmse_dict, break_constraints_rate_dict = future.result()
+    # for future in concurrent.futures.as_completed(future_sin):
+    #     rmse_dict, break_constraints_rate_dict = future.result()
         
-        for method_name, rmse in rmse_dict.items():
-            total_rmse_dict[method_name].append(rmse)
-        for method_name, rate in break_constraints_rate_dict.items():
-            total_break_constraints_rate_dict[method_name].append(rate)
+    #     for method_name, rmse in rmse_dict.items():
+    #         total_rmse_dict[method_name].append(rmse)
+    #     for method_name, rate in break_constraints_rate_dict.items():
+    #         total_break_constraints_rate_dict[method_name].append(rate)
     
     # step_curves の結果を回収
     for future in concurrent.futures.as_completed(future_step):

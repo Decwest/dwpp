@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from config import STATIC_LOOK_AHEAD_DISTANCE, V_MAX, V_MIN, W_MAX, W_MIN, \
+from config import STATIC_LOOK_AHEAD_DISTANCE, LOOK_AHEAD_GAIN, V_MAX, V_MIN, W_MAX, W_MIN, \
     A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS, REGULATED_LINEAR_SCALING_MIN_SPEED
 
 def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str)\
@@ -78,7 +78,8 @@ def calc_path_distances(path: np.ndarray) -> np.ndarray:
 def calc_look_ahead_distance(current_velocity: np.ndarray, method_name: str) -> float:
     # calc look ahead distance
     if method_name in ["app", "rpp", "dwpp"]:
-        look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE + max((current_velocity[0] - 0.5), 0.0)
+        look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE + LOOK_AHEAD_GAIN * current_velocity[0]
+        # look_ahead_distance = MIN_LOOK_AHEAD_DISTANCE + (STATIC_LOOK_AHEAD_DISTANCE - MIN_LOOK_AHEAD_DISTANCE) / V_MAX * current_velocity[0]
     else:
         look_ahead_distance = STATIC_LOOK_AHEAD_DISTANCE
         
