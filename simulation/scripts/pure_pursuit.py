@@ -4,7 +4,7 @@ from config import STATIC_LOOK_AHEAD_DISTANCE, LOOK_AHEAD_GAIN, V_MAX, V_MIN, W_
     A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS, REGULATED_LINEAR_SCALING_MIN_SPEED
 
 def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str)\
-    -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool]]:
+    -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool], float, float]:
     # calc index of current position
     current_idx = calc_index(current_pose, path)
     
@@ -23,6 +23,8 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
     if method_name in ["rpp", "dwpp"]:
         # calc regulated translational velocity (Regulated Pure Pursuit)
         regulated_v = calc_regulated_translational_velocity(curvature)
+    else:
+        regulated_v = V_MAX
     
     if method_name in ["pp", "app", "rpp"]:
         # calc translational velocity
@@ -54,7 +56,7 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
         break_constraints_flag[1] = True
     
     # debug用に、next_velocity_refと前方注視点の位置も返す
-    return next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag
+    return next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag, curvature, regulated_v
 
 def calc_index(current_pose: np.ndarray, path: np.ndarray) -> np.intp:
     # current_pose: [x, y, theta]
@@ -217,14 +219,14 @@ def calc_accel_constrained_velocity(current_velocity: np.ndarray, next_velocity_
     # 加速度制約によるクリッピング
     next_velocity = next_velocity_ref.copy()
     ## 並進加速度の制約
-    if next_velocity_ref[0] > current_velocity[0] + A_MAX * DT:
-        next_velocity[0] = current_velocity[0] + A_MAX * DT
-    elif next_velocity_ref[0] < current_velocity[0] - A_MAX * DT:
-        next_velocity[0] = current_velocity[0] - A_MAX * DT
+    if next_velocity_ref[0] > min(current_velocity[0] + A_MAX * DT, V_MAX):
+        next_velocity[0] = min(current_velocity[0] + A_MAX * DT, V_MAX)
+    elif next_velocity_ref[0] < max(current_velocity[0] - A_MAX * DT, V_MIN):
+        next_velocity[0] = max(current_velocity[0] - A_MAX * DT, V_MIN)
     ## 角速度の制約
-    if next_velocity_ref[1] > current_velocity[1] + AW_MAX * DT:
-        next_velocity[1] = current_velocity[1] + AW_MAX * DT
-    elif next_velocity_ref[1] < current_velocity[1] - AW_MAX * DT:
-        next_velocity[1] = current_velocity[1] - AW_MAX * DT
+    if next_velocity_ref[1] > min(current_velocity[1] + AW_MAX * DT, W_MAX):
+        next_velocity[1] = min(current_velocity[1] + AW_MAX * DT, W_MAX)
+    elif next_velocity_ref[1] < max(current_velocity[1] - AW_MAX * DT, W_MIN):
+        next_velocity[1] = max(current_velocity[1] - AW_MAX * DT, W_MIN)
     
     return next_velocity

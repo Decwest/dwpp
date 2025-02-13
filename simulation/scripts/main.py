@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import FancyArrowPatch
 from config import method_name_dict, DT, method_name_list
-from draw import draw_animation, draw_paths, draw_velocity_profile
+from draw import draw_animation, draw_paths, draw_velocity_profile, draw_vw_plane_plot
 from stats import calc_rmse, calc_break_constraints_rate
 from collections import defaultdict
 import concurrent.futures
@@ -20,6 +20,8 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
     robot_ref_velocities_dict = defaultdict(list)
     look_ahead_positions_dict = defaultdict(list)
     break_constraints_flags_dict = defaultdict(list)
+    curvatures_flags_dict = defaultdict(list)
+    regulated_vs_flags_dict = defaultdict(list)
     time_stamp_dict = defaultdict(list)
 
     for method_name in method_name_list:
@@ -35,6 +37,8 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
         robot_ref_velocities = [current_velocity]
         look_ahead_positions = []
         break_constraints_flags = [[False, False]]
+        curvatures = [0.0]
+        regulated_vs = [0.0]
         time_stamps = [0.0]
         
         sim_start_time = perf_counter()
@@ -44,7 +48,8 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
             if np.linalg.norm(current_pose[:2] - path[-1]) < 0.01:
                 break
             
-            next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag = pure_pursuit(current_pose, current_velocity, path, method_name)
+            next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag,\
+                curvature, regulated_v = pure_pursuit(current_pose, current_velocity, path, method_name)
             next_pose = forward_simulation_differential(current_pose, next_velocity)
             
             current_pose = next_pose
@@ -55,6 +60,8 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
             robot_ref_velocities.append(next_velocity_ref)
             look_ahead_positions.append(look_ahead_pos)
             break_constraints_flags.append(break_constraints_flag)
+            curvatures.append(curvature)
+            regulated_vs.append(regulated_v)
             time_stamps.append(time_stamps[-1] + DT)
             
             if current_velocity[0] == 0.0 and current_velocity[1] == 0.0:
@@ -68,6 +75,8 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
         robot_ref_velocities_dict[method_name] = robot_ref_velocities
         look_ahead_positions_dict[method_name] = look_ahead_positions
         break_constraints_flags_dict[method_name] = break_constraints_flags
+        curvatures_flags_dict[method_name] = curvatures
+        regulated_vs_flags_dict[method_name] = regulated_vs
         time_stamp_dict[method_name] = time_stamps
 
     # 統計量の算出
@@ -86,14 +95,19 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
         robot_velocities = np.array(robot_velocities_dict[method_name])
         robot_ref_velocities = np.array(robot_ref_velocities_dict[method_name])
         break_constraints_flags = np.array(break_constraints_flags_dict[method_name])
+        curvatures = np.array(curvatures_flags_dict[method_name])
+        regulated_vs = np.array(regulated_vs_flags_dict[method_name])
         time_stamps = np.array(time_stamp_dict[method_name])
-        
+            
         # 速度プロファイルの描画
         draw_velocity_profile(time_stamps, robot_velocities, robot_ref_velocities, break_constraints_flags, method_name, path_name)
         
         # 各手法ごとのアニメーションの描画
         draw_animation(path, robot_poses, look_ahead_positions, method_name, path_name)
-
+        
+        if method_name in ["rpp", "dwpp"]:
+            draw_vw_plane_plot(robot_velocities, robot_ref_velocities, time_stamps, curvatures, regulated_vs, method_name, path_name)
+        
     # 軌跡の描画
     draw_paths(path, robot_poses_dict, path_name)
     
