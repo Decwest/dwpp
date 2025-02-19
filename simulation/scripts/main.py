@@ -105,7 +105,7 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
         # 各手法ごとのアニメーションの描画
         draw_animation(path, robot_poses, look_ahead_positions, method_name, path_name)
         
-        if method_name in ["rpp", "dwpp"]:
+        if method_name in ["rpp", "dwpp", "dwpp_wo_rpp"]:
             draw_vw_plane_plot(robot_velocities, robot_ref_velocities, time_stamps, curvatures, regulated_vs, method_name, path_name)
         
     # 軌跡の描画

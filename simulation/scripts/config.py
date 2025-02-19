@@ -14,6 +14,7 @@ method_name_dict = {
     "pp": "Pure Pursuit",
     "app": "Adaptive Pure Pursuit",
     "rpp": "Regulated Pure Pursuit",
+    "dwpp_wo_rpp": "Dynamic Window Pure Pursuit without RPP",
     "dwpp": "Dynamic Window Pure Pursuit"
 }
-method_name_list = ["pp", "app", "rpp", "dwpp"]
+method_name_list = ["pp", "app", "rpp", "dwpp_wo_rpp", "dwpp"]
