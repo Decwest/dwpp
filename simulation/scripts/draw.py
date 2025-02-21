@@ -228,8 +228,8 @@ def plot_single(args):
     
     # 参照速度, 現在速度, 一時刻前の速度
     ax.scatter(robot_ref_velocity[0], robot_ref_velocity[1], c="green", label="reference velocity")
-    ax.scatter(robot_velocity[0], robot_velocity[1], c="red", label="current velocity")
-    ax.scatter(prev_robot_velocity[0], prev_robot_velocity[1], c="blue", label="last velocity")
+    ax.scatter(robot_velocity[0], robot_velocity[1], c="red", label="next velocity")
+    ax.scatter(prev_robot_velocity[0], prev_robot_velocity[1], c="blue", label="current velocity")
     
     # これまでの速度の軌跡
     past_robot_velocities = np.array(past_robot_velocities)
@@ -252,6 +252,7 @@ def plot_single(args):
     ax.axline((0, 0), slope=curvature, color='red', lw=2, label="$\omega={\phi}v$")
     
     ax.legend()
+    ax.set_aspect('equal')
     plt.tight_layout()
     plt.savefig(f"{dir_path}/{idx:04d}.png")
     plt.close(fig)

@@ -1,13 +1,13 @@
 Method: pp
-RMSE mean: 0.17438866211311715
+RMSE mean: 0.17438866211311713
 RMSE std: 0.14458852549494758
 
 Method: app
-RMSE mean: 0.15549697920153444
+RMSE mean: 0.15549697920153446
 RMSE std: 0.1392031394914329
 
 Method: rpp
-RMSE mean: 0.045914983953961395
+RMSE mean: 0.04591498395396139
 RMSE std: 0.02574645818930168
 
 Method: dwpp_wo_rpp
@@ -19,12 +19,12 @@ RMSE mean: 0.04103170426190891
 RMSE std: 0.018715617882979353
 
 Method: pp
-Break constraints rate mean: 20.843923664827702
+Break constraints rate mean: 20.8439236648277
 Break constraints rate std: 25.268802942175796
 
 Method: app
 Break constraints rate mean: 14.509883552111042
-Break constraints rate std: 18.68785393618545
+Break constraints rate std: 18.687853936185455
 
 Method: rpp
 Break constraints rate mean: 6.738111492982743
