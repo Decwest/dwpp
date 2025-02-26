@@ -154,7 +154,7 @@ def calc_optimal_velocity_considering_dynamic_window(current_velocity: np.ndarra
     dw_vmax = min(current_velocity[0] + A_MAX * DT, V_MAX)
     dw_vmin = max(current_velocity[0] - A_MAX * DT, V_MIN)
     dw_wmax = min(current_velocity[1] + AW_MAX * DT, W_MAX)
-    dw_wmin = max(current_velocity[1] - AW_MAX * DT, W_MIN) 
+    dw_wmin = max(current_velocity[1] - AW_MAX * DT, W_MIN)
     
     # regulated_vの考慮
     if dw_vmax > regulated_v:

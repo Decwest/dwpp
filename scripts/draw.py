@@ -1,4 +1,3 @@
-from time import perf_counter
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')  # GUI を使わないバックエンドに設定
@@ -8,10 +7,18 @@ from matplotlib.patches import FancyArrowPatch
 from config import method_name_dict, DT, V_MIN, V_MAX, W_MIN, W_MAX, A_MAX, AW_MAX
 from collections import defaultdict
 import os
-import pickle
 import concurrent.futures
 import cv2
 from pathlib import Path
+
+plt.rcParams["font.size"] = 9  # 全体のフォントサイズが変更されます。
+plt.rcParams["font.family"] = "Times New Roman"  # 全体のフォントを設定
+plt.rcParams["mathtext.fontset"] = "stix"  # math fontの設定
+plt.rcParams["font.weight"] = "normal"  # フォントの太さを細字に設定
+plt.rcParams["axes.linewidth"] = 1.0  # axis line width
+plt.rcParams["axes.grid"] = True  # make grid
+plt.rcParams["legend.edgecolor"] = "black"  # edgeの色を変更
+plt.rcParams["legend.handlelength"] = 1  # 凡例の線の長さを調節
 
 # 軌跡の描画
 def draw_paths(path: np.ndarray, robot_poses_dist: defaultdict, path_name: str):
@@ -56,35 +63,48 @@ def draw_velocity_profile(
     #==================================================================#
     # 1. Translational velocity (並進速度) の描画
     #==================================================================#
-    fig1, ax1 = plt.subplots()
-    ax1.set_xlabel('t')
-    ax1.set_ylabel('v')
-    ax1.set_title(f'Translational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
+    fig1 = plt.figure(figsize=(3, 3))
+    ax1 = fig1.add_subplot(111)
+    ax1.set_xlabel('$t$ [s]')
+    ax1.set_ylabel('$v$ [m/s]')
+    # ax1.set_title(f'Translational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
     
-    # コマンド速度(並進)をラインプロット
-    ax1.plot(time_stamps, robot_velocities[:, 0], label='Command Velocity')
+    # # コマンド速度(並進)をラインプロット
+    # ax1.plot(time_stamps, robot_velocities[:, 0], label='Command Velocity')
 
-    # 並進速度制約を破っているかどうかのフラグ (N×2のうち1列目)
-    mask_break_trans = break_constraints_flags[:, 0]  # Trueの箇所は並進速度制約違反
-    mask_ok_trans = ~mask_break_trans                # Falseの箇所はOK
+    # # 並進速度制約を破っているかどうかのフラグ (N×2のうち1列目)
+    # mask_break_trans = break_constraints_flags[:, 0]  # Trueの箇所は並進速度制約違反
+    # mask_ok_trans = ~mask_break_trans                # Falseの箇所はOK
 
-    # Reference velocity(並進)を、OKとNGで色分けして散布図
-    ax1.scatter(
-        time_stamps[mask_ok_trans],
-        robot_ref_velocities[mask_ok_trans, 0],
-        color='blue',
-        label='Reference Velocity (OK)',
-        s=5
-    )
-    ax1.scatter(
-        time_stamps[mask_break_trans],
-        robot_ref_velocities[mask_break_trans, 0],
-        color='red',
-        label='Reference Velocity (Broken Constraints)',
-        s=5
-    )
+    # # Reference velocity(並進)を、OKとNGで色分けして散布図
+    # ax1.scatter(
+    #     time_stamps[mask_ok_trans],
+    #     robot_ref_velocities[mask_ok_trans, 0],
+    #     color='blue',
+    #     label='Reference Velocity (OK)',
+    #     s=5
+    # )
+    # ax1.scatter(
+    #     time_stamps[mask_break_trans],
+    #     robot_ref_velocities[mask_break_trans, 0],
+    #     color='red',
+    #     label='Reference Velocity (Broken Constraints)',
+    #     s=5
+    # )
     
-    ax1.legend()
+    # 速度の上限・下限線
+    ax1.axhline(y=V_MAX, linestyle="--", c="black")
+    ax1.axhline(y=V_MIN, linestyle="--", c="black")
+    
+    # 並進目標速度
+    ax1.plot(time_stamps, robot_ref_velocities[:, 0], c="blue", label='Reference Velocity')
+    # 並進実現速度
+    ax1.plot(time_stamps, robot_velocities[:, 0], c="red", label='Velocity')
+    
+    # x軸の値の範囲を指定
+    ax1.set_xlim(0, 23.0)
+    
+    # ax1.legend()
     plt.tight_layout()
     
     # 保存用ディレクトリを作成
@@ -96,35 +116,48 @@ def draw_velocity_profile(
     #==================================================================#
     # 2. Rotational velocity (回転速度) の描画
     #==================================================================#
-    fig2, ax2 = plt.subplots()
-    ax2.set_xlabel('t')
-    ax2.set_ylabel('w')
-    ax2.set_title(f'Rotational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
+    fig2 = plt.figure(figsize=(3, 3))
+    ax2 = fig2.add_subplot(111)
+    ax2.set_xlabel('$t$ [s]')
+    ax2.set_ylabel('$w$ [m/s]')
+    # ax2.set_title(f'Rotational Velocity Profile, Path: {path_name}, Method: {method_name_dict[method_name]}')
     
-    # コマンド速度(回転)をラインプロット
-    ax2.plot(time_stamps, robot_velocities[:, 1], label='Command Velocity')
+    # # コマンド速度(回転)をラインプロット
+    # ax2.plot(time_stamps, robot_velocities[:, 1], label='Command Velocity')
 
-    # 回転速度制約を破っているかどうかのフラグ (N×2のうち2列目)
-    mask_break_rot = break_constraints_flags[:, 1]  # Trueの箇所は回転速度制約違反
-    mask_ok_rot = ~mask_break_rot                  # Falseの箇所はOK
+    # # 回転速度制約を破っているかどうかのフラグ (N×2のうち2列目)
+    # mask_break_rot = break_constraints_flags[:, 1]  # Trueの箇所は回転速度制約違反
+    # mask_ok_rot = ~mask_break_rot                  # Falseの箇所はOK
 
-    # Reference velocity(回転)を、OKとNGで色分けして散布図
-    ax2.scatter(
-        time_stamps[mask_ok_rot],
-        robot_ref_velocities[mask_ok_rot, 1],
-        color='blue',
-        label='Reference Velocity (OK)',
-        s=5
-    )
-    ax2.scatter(
-        time_stamps[mask_break_rot],
-        robot_ref_velocities[mask_break_rot, 1],
-        color='red',
-        label='Reference Velocity (Broken Constraints)',
-        s=5
-    )
+    # # Reference velocity(回転)を、OKとNGで色分けして散布図
+    # ax2.scatter(
+    #     time_stamps[mask_ok_rot],
+    #     robot_ref_velocities[mask_ok_rot, 1],
+    #     color='blue',
+    #     label='Reference Velocity (OK)',
+    #     s=5
+    # )
+    # ax2.scatter(
+    #     time_stamps[mask_break_rot],
+    #     robot_ref_velocities[mask_break_rot, 1],
+    #     color='red',
+    #     label='Reference Velocity (Broken Constraints)',
+    #     s=5
+    # )
     
-    ax2.legend()
+    # 速度の上限・下限線
+    ax2.axhline(y=W_MAX, linestyle="--", c="black")
+    ax2.axhline(y=W_MIN, linestyle="--", c="black")
+    
+    # 回転目標速度
+    ax2.plot(time_stamps, robot_ref_velocities[:, 1], c="blue", label='Reference Velocity')
+    # 回転実現速度
+    ax2.plot(time_stamps, robot_velocities[:, 1], c="red", label='Velocity')
+    
+    # x軸の値の範囲を指定
+    ax2.set_xlim(0, 23.0)
+    
+    # ax2.legend()
     plt.tight_layout()
     plt.savefig(f'../results/{path_name}/{method_name}_rotational_velocity_profile.png')
     plt.close()

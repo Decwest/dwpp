@@ -1,7 +1,5 @@
 from collections import defaultdict
 import numpy as np
-from config import method_name_dict, method_name_list
-import os
 from scipy.spatial.distance import cdist
 
 def calc_rmse(robot_poses_dict: defaultdict, path: np.ndarray) -> dict:

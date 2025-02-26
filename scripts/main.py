@@ -1,18 +1,16 @@
 from pure_pursuit import pure_pursuit
-from path import sin_curves, step_curves
+from path import step_curves
 from robot import forward_simulation_differential
 from time import perf_counter
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.patches import FancyArrowPatch
-from config import method_name_dict, DT, method_name_list
+from config import DT, method_name_list
 from draw import draw_animation, draw_paths, draw_velocity_profile, draw_vw_plane_plot
 from stats import calc_rmse, calc_break_constraints_rate
 from collections import defaultdict
 import concurrent.futures
+import pickle
 
-def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw: bool)-> tuple[dict, dict]:
+def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw: bool, animation: bool)-> tuple[dict, dict]:
     # 一つの曲線に対するシミュレーションと描画
 
     robot_poses_dict = defaultdict(list)
@@ -83,6 +81,28 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
     # 制約違反した割合の算出
     break_constraints_rate_dict = calc_break_constraints_rate(break_constraints_flags_dict)
     
+    # pickleで保存
+    with open(f"../results/{path_name}/robot_poses_dict.pkl", "wb") as f:
+        pickle.dump(robot_poses_dict, f)
+    with open(f"../results/{path_name}/robot_velocities_dict.pkl", "wb") as f:
+        pickle.dump(robot_velocities_dict, f)
+    with open(f"../results/{path_name}/robot_ref_velocities_dict.pkl", "wb") as f:
+        pickle.dump(robot_ref_velocities_dict, f)
+    with open(f"../results/{path_name}/look_ahead_positions_dict.pkl", "wb") as f:
+        pickle.dump(look_ahead_positions_dict, f)
+    with open(f"../results/{path_name}/break_constraints_flags_dict.pkl", "wb") as f:
+        pickle.dump(break_constraints_flags_dict, f)
+    with open(f"../results/{path_name}/curvatures_flags_dict.pkl", "wb") as f:
+        pickle.dump(curvatures_flags_dict, f)
+    with open(f"../results/{path_name}/regulated_vs_flags_dict.pkl", "wb") as f:
+        pickle.dump(regulated_vs_flags_dict, f)
+    with open(f"../results/{path_name}/time_stamp_dict.pkl", "wb") as f:
+        pickle.dump(time_stamp_dict, f)
+    with open(f"../results/{path_name}/rmse_dict.pkl", "wb") as f:
+        pickle.dump(rmse_dict, f)
+    with open(f"../results/{path_name}/break_constraints_rate_dict.pkl", "wb") as f:
+        pickle.dump(break_constraints_rate_dict, f)
+    
     if not draw:
         return rmse_dict, break_constraints_rate_dict
     
@@ -99,6 +119,9 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
         # 速度プロファイルの描画
         draw_velocity_profile(time_stamps, robot_velocities, robot_ref_velocities, break_constraints_flags, method_name, path_name)
         
+        if not animation:
+            continue
+        
         # 各手法ごとのアニメーションの描画
         draw_animation(path, robot_poses, look_ahead_positions, method_name, path_name)
         
@@ -111,13 +134,13 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
     return rmse_dict, break_constraints_rate_dict
 
 
-def simulate_path(idx, path, initial_pose, prefix, draw=True):
+def simulate_path(idx, path, initial_pose, prefix, draw=True, animation=False):
     """
     並列処理させたい実行単位(ワーカー)。
     シミュレーション結果(rmse_dict, break_constraints_rate_dict)を返す。
     """
     path_name = f"{prefix}_{idx}"
-    rmse_dict, break_constraints_rate_dict = simulation(path, path_name, initial_pose, draw=draw)
+    rmse_dict, break_constraints_rate_dict = simulation(path, path_name, initial_pose, draw=draw, animation=animation)
     return rmse_dict, break_constraints_rate_dict
 
 # 事前に sin_curves / step_curves を用意

@@ -23,8 +23,8 @@ Break constraints rate mean: 20.52956128556909
 Break constraints rate std: 14.147363317728454
 
 Method: rpp
-Break constraints rate mean: 15.166042885037747
-Break constraints rate std: 6.573950489892674
+Break constraints rate mean: 15.166042885037744
+Break constraints rate std: 6.573950489892673
 
 Method: dwpp
 Break constraints rate mean: 0.0
