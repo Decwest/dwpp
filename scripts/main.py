@@ -114,7 +114,7 @@ def simulation(path: np.ndarray, path_name: str, initial_pose: np.ndarray, draw:
     return rmse_dict, break_constraints_rate_dict
 
 
-def simulate_path(idx, path, initial_pose, prefix, draw=True):
+def simulate_path(idx, path, initial_pose, prefix, draw=False):
     """
     並列処理させたい実行単位(ワーカー)。
     シミュレーション結果(rmse_dict, break_constraints_rate_dict)を返す。
