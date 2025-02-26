@@ -1,10 +1,11 @@
 import numpy as np
 import math
 from config import MIN_LOOK_AHEAD_DISTANCE, MAX_LOOK_AHEAD_DISTANCE, LOOK_AHEAD_TIME, V_MAX, V_MIN, W_MAX, W_MIN, \
-    A_MAX, AW_MAX, DT, REGULATED_LINEAR_SCALING_MIN_RADIUS, REGULATED_LINEAR_SCALING_MIN_SPEED
+    A_MAX, AW_MAX, DT, APPROACH_VELOCITY_SCALING_DIST, MIN_APPROACH_LINEAR_VELOCITY, GOAL_TORELANCE_DIST, \
+    REGULATED_LINEAR_SCALING_MIN_RADIUS, REGULATED_LINEAR_SCALING_MIN_SPEED
 
 def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: np.ndarray, method_name: str)\
-    -> tuple[np.ndarray, np.ndarray, np.ndarray, list[bool], float, float]:
+    -> tuple[np.ndarray, np.ndarray, list[bool], float, float]:
     # calc index of current position
     current_idx = calc_index(current_pose, path)
     
@@ -17,9 +18,6 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
     # calc curvature to the look ahead position
     curvature, look_ahead_pos = calc_curvature_to_look_ahead_position(current_pose, current_idx, path, path_distances, look_ahead_distance)
     
-    # decide accel or decel
-    is_accel = decide_accel_or_decel(current_idx, path_distances)
-    
     if method_name in ["rpp", "dwpp"]:
         # calc regulated translational velocity (Regulated Pure Pursuit)
         regulated_v = calc_regulated_translational_velocity(curvature)
@@ -28,10 +26,7 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
     
     if method_name in ["pp", "app", "rpp"]:
         # calc translational velocity
-        if is_accel:
-            v_ref = min(current_velocity[0] + A_MAX * DT, V_MAX)
-        else:
-            v_ref = max(current_velocity[0] - A_MAX * DT, V_MIN)
+        v_ref = calc_reference_translational_velocity(current_pose, path[-1])
         
         # regulate translational velocity
         if method_name == "rpp":
@@ -41,22 +36,37 @@ def pure_pursuit(current_pose: np.ndarray, current_velocity: np.ndarray, path: n
         w_ref = curvature * v_ref
         next_velocity_ref = np.array([v_ref, w_ref])
         
-        # 加速度制約によるクリッピング
-        next_velocity = calc_accel_constrained_velocity(current_velocity, next_velocity_ref)
-        
     else:
+        # decide accel or decel
+        is_accel = decide_accel_or_decel(current_idx, path_distances)
         # calc dynamic window and optimal next velocity
-        next_velocity = calc_optimal_velocity_considering_dynamic_window(current_velocity, regulated_v, curvature, is_accel)
-        next_velocity_ref = next_velocity
+        next_velocity_ref = calc_optimal_velocity_considering_dynamic_window(current_velocity, regulated_v, curvature, is_accel)
 
-    break_constraints_flag = [False, False]
-    if next_velocity[0] != next_velocity_ref[0]:
-        break_constraints_flag[0] = True
-    if next_velocity[1] != next_velocity_ref[1]:
-        break_constraints_flag[1] = True
+    break_constraints_flag = evaluate_accelaration_constraints(current_velocity, next_velocity_ref)
     
     # debug用に、next_velocity_refと前方注視点の位置も返す
-    return next_velocity, next_velocity_ref, look_ahead_pos, break_constraints_flag, curvature, regulated_v
+    return next_velocity_ref, look_ahead_pos, break_constraints_flag, curvature, regulated_v
+
+def evaluate_accelaration_constraints(current_velocity: np.ndarray, next_velocity_ref: np.ndarray) -> list[bool]:
+    break_constraints_flag = [False, False]
+    if current_velocity[0] - A_MAX * DT > next_velocity_ref[0] or current_velocity[0] + A_MAX * DT < next_velocity_ref[0]:
+        break_constraints_flag[0] = True
+    if current_velocity[1] - AW_MAX * DT > next_velocity_ref[1] or current_velocity[1] + AW_MAX * DT < next_velocity_ref[1]:
+        break_constraints_flag[1] = True
+    
+    return break_constraints_flag
+
+def calc_reference_translational_velocity(current_pose: np.ndarray, goal_pose: np.ndarray) -> float:
+    v_ref = V_MAX
+    
+    # ゴールに近づいたら速度を制限する
+    distance_to_goal = float(np.linalg.norm(goal_pose[:2] - current_pose[:2]))
+    if distance_to_goal < APPROACH_VELOCITY_SCALING_DIST:
+        v_ref = max(v_ref * distance_to_goal / APPROACH_VELOCITY_SCALING_DIST, MIN_APPROACH_LINEAR_VELOCITY)
+    if distance_to_goal < GOAL_TORELANCE_DIST:
+        v_ref = 0.0
+    
+    return v_ref
 
 def calc_index(current_pose: np.ndarray, path: np.ndarray) -> np.intp:
     # current_pose: [x, y, theta]
@@ -216,18 +226,3 @@ def calc_optimal_velocity_considering_dynamic_window(current_velocity: np.ndarra
     
     return np.array(next_velocity)
 
-def calc_accel_constrained_velocity(current_velocity: np.ndarray, next_velocity_ref: np.ndarray) -> np.ndarray:
-    # 加速度制約によるクリッピング
-    next_velocity = next_velocity_ref.copy()
-    ## 並進加速度の制約
-    if next_velocity_ref[0] > min(current_velocity[0] + A_MAX * DT, V_MAX):
-        next_velocity[0] = min(current_velocity[0] + A_MAX * DT, V_MAX)
-    elif next_velocity_ref[0] < max(current_velocity[0] - A_MAX * DT, V_MIN):
-        next_velocity[0] = max(current_velocity[0] - A_MAX * DT, V_MIN)
-    ## 角速度の制約
-    if next_velocity_ref[1] > min(current_velocity[1] + AW_MAX * DT, W_MAX):
-        next_velocity[1] = min(current_velocity[1] + AW_MAX * DT, W_MAX)
-    elif next_velocity_ref[1] < max(current_velocity[1] - AW_MAX * DT, W_MIN):
-        next_velocity[1] = max(current_velocity[1] - AW_MAX * DT, W_MIN)
-    
-    return next_velocity
