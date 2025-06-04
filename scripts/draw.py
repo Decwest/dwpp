@@ -173,7 +173,7 @@ def draw_animation(path: np.ndarray, robot_poses: np.ndarray, look_ahead_positio
     ax.set_ylim(np.min(path[:, 1]) - 1, np.max(path[:, 1]) + 1)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
-    ax.set_title(f'{method_name_dict[method_name]} Simulation')
+    # ax.set_title(f'{method_name_dict[method_name]} Simulation')
     ax.set_aspect('equal')
 
     # プロット要素の初期化
