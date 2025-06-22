@@ -1,0 +1,9 @@
+<library path="nav2_dwpp_controller">
+  <class type="nav2_dwpp_controller::DWPPController" base_class_type="nav2_core::Controller">
+    <description>
+      Dynamic Window Pure Pursuit Controller plugin for Nav2.
+      Extends the Regulated Pure Pursuit Controller with dynamic window constraints
+      for improved trajectory following and velocity regulation.
+    </description>
+  </class>
+</library>
